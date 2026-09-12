@@ -1,0 +1,6 @@
+{
+  "name": "SamleyEduSuite Ghana - School Management System",
+  "description": "Production-grade multi-tenant School Management SaaS for Ghanaian Private Schools powered by Supabase, featuring Admin, Teacher, and Parent portals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

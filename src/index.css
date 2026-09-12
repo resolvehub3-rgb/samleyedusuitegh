@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@layer base {
+  *, ::before, ::after {
+    font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+  
+  html, body {
+    font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+}
+
+/* Report Card Watermark */
+.report-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  width: 55%;
+  max-width: 380px;
+  height: auto;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+  filter: grayscale(100%);
+}
+
+/* Global Print Styles — only print the report card content */
+@media print {
+  body {
+    background: white !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Kill browser default headers/footers (date, time, page title, page numbers) */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  /* Hide all non-essential elements when printing */
+  nav, aside, header, .no-print, .print\:hidden {
+    display: none !important;
+  }
+
+  /* Remove shadows, borders, and rounding on print */
+  * {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Watermark — slightly stronger on paper */
+  .report-watermark {
+    opacity: 0.05 !important;
+  }
+
+  /* Report card footer - always at bottom */
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 9px;
+    color: #64748b;
+    padding: 6px 0;
+    border-top: 1px solid #e2e8f0;
+    background: white;
+  }
+}
