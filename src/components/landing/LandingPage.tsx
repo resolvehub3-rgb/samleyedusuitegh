@@ -14,6 +14,7 @@ import { LandingContact } from './LandingContact';
 import { LandingPricing } from './LandingPricing';
 import { LandingCTA } from './LandingCTA';
 import { LandingFooter } from './LandingFooter';
+import { WhatsAppChatButton } from './WhatsAppChatButton';
 
 interface LandingPageProps {
   onNavigateToLogin: () => void;
@@ -50,6 +51,7 @@ export function LandingPage({ onNavigateToLogin, onNavigateToRegister, onNavigat
           onNavigateToRegister={onNavigateToRegister}
         />
       </main>
+      <WhatsAppChatButton />
       <LandingFooter
         onNavigateToLogin={onNavigateToLogin}
         onNavigateToRegister={onNavigateToRegister}
