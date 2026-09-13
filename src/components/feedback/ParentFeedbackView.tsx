@@ -16,6 +16,7 @@ export const ParentFeedbackView: React.FC = () => {
   // New feedback modal for parents
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [category, setCategory] = useState<'Academic' | 'Facilities' | 'Transport' | 'Fees' | 'Discipline' | 'Other'>('Academic');
+  const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -76,6 +77,7 @@ export const ParentFeedbackView: React.FC = () => {
       const { data, error } = await supabase.from('parent_feedback').insert({
         school_id: school.id,
         parent_id: profile.id,
+        subject: subject.trim(),
         category,
         message: message.trim(),
         status: 'open'
@@ -104,6 +106,7 @@ export const ParentFeedbackView: React.FC = () => {
         }
 
         setIsModalOpen(false);
+        setSubject('');
         setMessage('');
         fetchFeedback();
       }
@@ -124,8 +127,7 @@ export const ParentFeedbackView: React.FC = () => {
         .update({
           admin_response: replyText.trim(),
           status: 'resolved',
-          responded_by: profile.id,
-          responded_at: new Date().toISOString()
+          resolved_at: new Date().toISOString()
         })
         .eq('id', fb.id);
 
@@ -227,6 +229,11 @@ export const ParentFeedbackView: React.FC = () => {
                 </div>
 
                 <div>
+                  {fb.subject && (
+                    <div className="text-sm font-bold text-slate-900 dark:text-white mb-2">
+                      {fb.subject}
+                    </div>
+                  )}
                   <div className="text-xs font-semibold text-slate-500 mb-1">
                     Parent Message ({parent?.full_name || 'Parent'}):
                   </div>
@@ -244,7 +251,7 @@ export const ParentFeedbackView: React.FC = () => {
                       {fb.admin_response}
                     </p>
                     <span className="text-[10px] text-slate-400 block mt-1">
-                      Responded at: {fb.responded_at ? new Date(fb.responded_at).toLocaleString() : 'N/A'}
+                      Responded at: {fb.resolved_at ? new Date(fb.resolved_at).toLocaleString() : 'N/A'}
                     </span>
                   </div>
                 ) : isAdmin ? (
@@ -323,6 +330,21 @@ export const ParentFeedbackView: React.FC = () => {
               <option value="Discipline">Discipline & Conduct</option>
               <option value="Other">General Question / Other</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Subject *
+            </label>
+            <input
+              type="text"
+              required
+              maxLength={120}
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="e.g. Question about Term 2 school fees"
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+            />
           </div>
 
           <div>

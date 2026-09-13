@@ -92,6 +92,10 @@ export const FaqProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (mountedRef.current) {
         setAllFaqs([...defaultGeneralFaqs, ...defaultSubscriptionFaqs]);
       }
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [supabase]);
 

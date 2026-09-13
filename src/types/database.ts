@@ -296,10 +296,12 @@ export interface ParentFeedback {
   school_id: string;
   parent_id: string;
   student_id?: string | null;
+  subject: string;
   category: FeedbackCategory;
   message: string;
   status: FeedbackStatus;
   admin_response?: string | null;
+  resolved_at?: string | null;
   created_at: string;
   updated_at: string;
   parent?: Profile;
