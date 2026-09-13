@@ -1,12 +1,14 @@
 import React from 'react';
-import { GraduationCap, Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
 
 interface LandingFooterProps {
   onNavigateToLogin: () => void;
   onNavigateToRegister: () => void;
+  onNavigateToPrivacy?: () => void;
+  onNavigateToTerms?: () => void;
 }
 
-export function LandingFooter({ onNavigateToLogin, onNavigateToRegister }: LandingFooterProps) {
+export function LandingFooter({ onNavigateToLogin, onNavigateToRegister, onNavigateToPrivacy, onNavigateToTerms }: LandingFooterProps) {
   const scrollToSection = (href: string) => {
     document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -18,9 +20,7 @@ export function LandingFooter({ onNavigateToLogin, onNavigateToRegister }: Landi
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-white" />
-              </div>
+              <img src="/logo1.png" alt="SamleyEduSuite" className="h-9 w-9 rounded-xl object-contain" />
               <span className="text-lg font-bold text-white">
                 Samley<span className="text-orange-400">Edu</span>Suite
               </span>
@@ -47,7 +47,7 @@ export function LandingFooter({ onNavigateToLogin, onNavigateToRegister }: Landi
                       e.preventDefault();
                       scrollToSection(href);
                     }}
-                    className="text-sm text-slate-400 hover:text-orange-400 transition-colors"
+                    className="text-sm text-slate-400 hover:text-white transition-colors"
                   >
                     {label}
                   </a>
@@ -63,7 +63,7 @@ export function LandingFooter({ onNavigateToLogin, onNavigateToRegister }: Landi
               <li>
                 <button
                   onClick={onNavigateToLogin}
-                  className="text-sm text-slate-400 hover:text-orange-400 transition-colors"
+                  className="text-sm text-slate-400 hover:text-white transition-colors"
                 >
                   Login
                 </button>
@@ -71,7 +71,7 @@ export function LandingFooter({ onNavigateToLogin, onNavigateToRegister }: Landi
               <li>
                 <button
                   onClick={onNavigateToRegister}
-                  className="text-sm text-slate-400 hover:text-orange-400 transition-colors"
+                  className="text-sm text-slate-400 hover:text-white transition-colors"
                 >
                   Register Your School
                 </button>
@@ -105,12 +105,24 @@ export function LandingFooter({ onNavigateToLogin, onNavigateToRegister }: Landi
             &copy; {new Date().getFullYear()} SamleyEduSuite. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <a href="#" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+            <button
+              onClick={() => {
+                window.history.pushState({}, '', '/privacy-policy');
+                onNavigateToPrivacy?.();
+              }}
+              className="text-xs text-slate-500 hover:text-white transition-colors"
+            >
               Privacy Policy
-            </a>
-            <a href="#" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+            </button>
+            <button
+              onClick={() => {
+                window.history.pushState({}, '', '/terms-of-service');
+                onNavigateToTerms?.();
+              }}
+              className="text-xs text-slate-500 hover:text-white transition-colors"
+            >
               Terms of Service
-            </a>
+            </button>
           </div>
         </div>
       </div>

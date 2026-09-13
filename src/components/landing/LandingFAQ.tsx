@@ -1,105 +1,127 @@
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Sparkles, MessageCircleQuestion } from 'lucide-react';
 import { SectionWrapper } from './SectionWrapper';
+import { useFaq } from '../../context/FaqContext';
 
-const faqs = [
-  {
-    question: 'What is SamleyEduSuite?',
-    answer:
-      'SamleyEduSuite is a modern digital school management system designed for private schools in Ghana. It provides a connected platform to manage students, teachers, parents, attendance, academic performance, terminal reports, announcements, payments and more.',
-  },
-  {
-    question: 'Who can use SamleyEduSuite?',
-    answer:
-      'SamleyEduSuite is designed for Ghanaian private schools and their authorized administrators, teachers and parents. School owners register the school, then invite teachers and parents to join.',
-  },
-  {
-    question: 'Is there a student portal?',
-    answer:
-      'No. SamleyEduSuite does not provide a student login portal. The platform serves school administrators, teachers and parents.',
-  },
-  {
-    question: 'Can parents monitor their wards?',
-    answer:
-      'Yes. Parents can view their wards\' class, class teacher, attendance history, academic performance, terminal reports, school announcements and receive notifications through the Parent Portal.',
-  },
-  {
-    question: 'Can parents make payments?',
-    answer:
-      'Yes. Where the school administrator has configured payment functionality, parents can make and monitor school payments through the Parent Portal.',
-  },
-  {
-    question: 'Can teachers record attendance?',
-    answer:
-      'Yes. Teachers can record daily attendance for classes they are authorized to manage. Administrators can monitor attendance across all classes.',
-  },
-  {
-    question: 'Can teachers generate terminal reports?',
-    answer:
-      'Yes. Where the school administrator has assigned the required class and report permissions, teachers can generate professional terminal report cards for their students.',
-  },
-  {
-    question: 'Does the platform work on mobile?',
-    answer:
-      'Yes. The interface is fully responsive and optimized for both mobile phones and desktop computers.',
-  },
-  {
-    question: 'Does the system work in realtime?',
-    answer:
-      'Yes. Relevant platform features use Supabase Realtime to deliver updates instantly across connected users without requiring page refreshes.',
-  },
-];
-
-function FAQItem({ question, answer }: React.PropsWithChildren<{ question: string; answer: string }>) {
+function FAQItem({ question, answer, index }: { key?: string; question: string; answer: string; index: number }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="border border-slate-100 dark:border-slate-700/50 rounded-2xl overflow-hidden">
+    <div
+      className={`group border rounded-2xl overflow-hidden transition-all duration-300 ${
+        isOpen
+          ? 'border-orange-200 dark:border-orange-800/40 bg-white dark:bg-slate-800/60 shadow-lg shadow-orange-500/5'
+          : 'border-slate-100 dark:border-slate-700/40 bg-white dark:bg-slate-800/30 hover:border-slate-200 dark:hover:border-slate-600/60 hover:shadow-md hover:shadow-slate-200/50 dark:hover:shadow-none'
+      }`}
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+        className="w-full flex items-center gap-4 p-5 sm:p-6 text-left transition-colors"
         aria-expanded={isOpen}
       >
-        <span className="font-semibold text-slate-900 dark:text-white">{question}</span>
+        <div
+          className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black transition-all duration-300 ${
+            isOpen
+              ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
+              : 'bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 group-hover:bg-orange-50 dark:group-hover:bg-orange-950/30 group-hover:text-orange-500'
+          }`}
+        >
+          {String(index + 1).padStart(2, '0')}
+        </div>
+        <span
+          className={`flex-1 font-semibold text-sm sm:text-base transition-colors duration-200 ${
+            isOpen
+              ? 'text-orange-600 dark:text-orange-400'
+              : 'text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white'
+          }`}
+        >
+          {question}
+        </span>
         <ChevronDown
-          className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-300 ${
-            isOpen ? 'rotate-180 text-orange-500' : ''
+          className={`w-5 h-5 shrink-0 transition-all duration-300 ${
+            isOpen
+              ? 'rotate-180 text-orange-500'
+              : 'text-slate-300 dark:text-slate-600 group-hover:text-slate-400'
           }`}
         />
       </button>
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          isOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
+        className={`overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          isOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <p className="px-5 pb-5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-          {answer}
-        </p>
+        <div className="px-5 sm:px-6 pb-5 sm:pb-6 ml-12">
+          <div className="h-px bg-gradient-to-r from-orange-200 via-orange-100 to-transparent dark:from-orange-800/30 dark:via-orange-900/20 mb-4" />
+          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{answer}</p>
+        </div>
       </div>
     </div>
   );
 }
 
 export function LandingFAQ() {
+  const { generalFaqs, loading } = useFaq();
+
   return (
     <SectionWrapper
       id="faq"
-      className="py-20 sm:py-24 bg-slate-50 dark:bg-slate-950"
+      className="py-20 sm:py-28 bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
     >
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <span className="inline-block text-sm font-bold text-orange-500 uppercase tracking-wider mb-3">
-            FAQ
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
-            Frequently Asked Questions
+        {/* Header */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-50 dark:bg-orange-950/30 border border-orange-200/60 dark:border-orange-800/30 mb-6">
+            <MessageCircleQuestion className="w-4 h-4 text-orange-500" />
+            <span className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
+              FAQ
+            </span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+            Frequently Asked{' '}
+            <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+              Questions
+            </span>
           </h2>
+          <p className="mt-4 text-base text-slate-500 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
+            Everything you need to know about SamleyEduSuite. Can&apos;t find what you&apos;re looking for?{' '}
+            <a href="#contact" className="text-orange-500 hover:text-orange-600 font-semibold underline underline-offset-2 decoration-orange-300/50 transition-colors">
+              Contact us
+            </a>.
+          </p>
         </div>
 
-        <div className="space-y-3">
-          {faqs.map((faq, i) => (
-            <FAQItem key={i} question={faq.question} answer={faq.answer} />
-          ))}
+        {/* FAQ List */}
+        {loading ? (
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="animate-pulse rounded-2xl bg-white dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/40 p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-700" />
+                  <div className="flex-1 h-4 bg-slate-200 dark:bg-slate-700 rounded-lg w-3/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {generalFaqs.map((faq, i) => (
+              <FAQItem key={faq.id} question={faq.question} answer={faq.answer} index={i} />
+            ))}
+          </div>
+        )}
+
+        {/* Bottom CTA */}
+        <div className="mt-12 text-center">
+          <div className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/40 shadow-sm">
+            <Sparkles className="w-4 h-4 text-orange-500" />
+            <span className="text-sm text-slate-600 dark:text-slate-300">
+              Still have questions?{' '}
+              <a href="#contact" className="font-semibold text-orange-500 hover:text-orange-600 transition-colors">
+                Reach out to our team
+              </a>
+            </span>
+          </div>
         </div>
       </div>
     </SectionWrapper>

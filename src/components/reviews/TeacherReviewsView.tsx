@@ -105,9 +105,7 @@ export const TeacherReviewsView: React.FC = () => {
         parent_id: profile.id,
         student_id: selectedWardId,
         rating,
-        review_text: reviewText.trim(),
-        academic_year: '2025/2026',
-        term: 'Term 1'
+        comments: reviewText.trim(),
       });
 
       if (error) {
@@ -232,7 +230,7 @@ export const TeacherReviewsView: React.FC = () => {
                   </div>
 
                   <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic mt-2">
-                    &ldquo;{rev.review_text}&rdquo;
+                    &ldquo;{rev.comments}&rdquo;
                   </p>
                 </div>
 

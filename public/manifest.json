@@ -1,0 +1,42 @@
+{
+  "name": "SamleyEduSuite - School Management System",
+  "short_name": "SamleyEduSuite",
+  "description": "A modern digital school management solution designed for private schools in Ghana.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#f97316",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/logo1.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo1.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Login",
+      "short_name": "Login",
+      "url": "/login",
+      "description": "Login to SamleyEduSuite"
+    },
+    {
+      "name": "Register School",
+      "short_name": "Register",
+      "url": "/register",
+      "description": "Register your school"
+    }
+  ]
+}

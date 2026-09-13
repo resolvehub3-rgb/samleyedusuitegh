@@ -4,10 +4,14 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { SuperAdminProvider, useSuperAdmin } from './context/SuperAdminContext';
 import { SubscriptionProvider, useSubscription } from './context/SubscriptionContext';
+import { FaqProvider } from './context/FaqContext';
+import { PwaInstallBanner } from './components/common/PwaInstallBanner';
 import { SubscriptionExpiredView } from './components/subscription/SubscriptionExpiredView';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { LandingPage } from './components/landing/LandingPage';
+import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
+import { TermsOfService } from './components/legal/TermsOfService';
 
 // Auth Views
 import { LoginView } from './components/auth/LoginView';
@@ -125,7 +129,34 @@ function AppContent() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLanding, setShowLanding] = useState(() => window.location.pathname === '/');
+  const [showLegalPage, setShowLegalPage] = useState<'privacy' | 'terms' | null>(() => {
+    const path = window.location.pathname;
+    if (path === '/privacy-policy') return 'privacy';
+    if (path === '/terms-of-service') return 'terms';
+    return null;
+  });
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+
+  // Handle browser back/forward for legal pages
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === '/privacy-policy') {
+        setShowLegalPage('privacy');
+        setShowLanding(false);
+      } else if (path === '/terms-of-service') {
+        setShowLegalPage('terms');
+        setShowLanding(false);
+      } else if (path === '/') {
+        setShowLegalPage(null);
+        setShowLanding(true);
+      } else {
+        setShowLegalPage(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Subscription hook MUST be called before any conditional returns (Rules of Hooks)
   const { isSuspended, isExpired, loading: subLoading, subscription } = useSubscription();
@@ -177,6 +208,30 @@ function AppContent() {
       setAuthMode('login');
     };
 
+    // Show legal pages (not in navbar, standalone)
+    if (showLegalPage === 'privacy') {
+      return (
+        <PrivacyPolicy
+          onBack={() => {
+            window.history.pushState({}, '', '/');
+            setShowLegalPage(null);
+            setShowLanding(true);
+          }}
+        />
+      );
+    }
+    if (showLegalPage === 'terms') {
+      return (
+        <TermsOfService
+          onBack={() => {
+            window.history.pushState({}, '', '/');
+            setShowLegalPage(null);
+            setShowLanding(true);
+          }}
+        />
+      );
+    }
+
     // Show landing page at root path only when in login mode (default)
     if (showLanding && path === '/') {
       return (
@@ -190,6 +245,16 @@ function AppContent() {
             window.history.pushState({}, '', '/register');
             setShowLanding(false);
             setAuthMode('register');
+          }}
+          onNavigateToPrivacy={() => {
+            window.history.pushState({}, '', '/privacy-policy');
+            setShowLanding(false);
+            setShowLegalPage('privacy');
+          }}
+          onNavigateToTerms={() => {
+            window.history.pushState({}, '', '/terms-of-service');
+            setShowLanding(false);
+            setShowLegalPage('terms');
           }}
         />
       );
@@ -407,7 +472,10 @@ export default function App() {
         <NotificationProvider>
           <SuperAdminProvider>
             <SubscriptionProvider>
-              <AppContent />
+              <FaqProvider>
+                <AppContent />
+                <PwaInstallBanner />
+              </FaqProvider>
             </SubscriptionProvider>
           </SuperAdminProvider>
         </NotificationProvider>

@@ -18,9 +18,11 @@ import { LandingFooter } from './LandingFooter';
 interface LandingPageProps {
   onNavigateToLogin: () => void;
   onNavigateToRegister: () => void;
+  onNavigateToPrivacy?: () => void;
+  onNavigateToTerms?: () => void;
 }
 
-export function LandingPage({ onNavigateToLogin, onNavigateToRegister }: LandingPageProps) {
+export function LandingPage({ onNavigateToLogin, onNavigateToRegister, onNavigateToPrivacy, onNavigateToTerms }: LandingPageProps) {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900 transition-colors">
       <LandingNavbar
@@ -51,6 +53,8 @@ export function LandingPage({ onNavigateToLogin, onNavigateToRegister }: Landing
       <LandingFooter
         onNavigateToLogin={onNavigateToLogin}
         onNavigateToRegister={onNavigateToRegister}
+        onNavigateToPrivacy={onNavigateToPrivacy}
+        onNavigateToTerms={onNavigateToTerms}
       />
     </div>
   );

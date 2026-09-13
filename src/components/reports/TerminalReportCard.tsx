@@ -15,6 +15,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { SchoolClass, Student, Subject, StudentResult, TerminalReport, ParentStudent, Profile } from '../../types/database';
 import { Badge } from '../common/Badge';
 import { EmptyState } from '../common/EmptyState';
+import { ReportWatermark } from './ReportWatermark';
 
 export const TerminalReportCard: React.FC = () => {
   const { school, schoolSettings, profile } = useAuth();
@@ -581,15 +582,11 @@ export const TerminalReportCard: React.FC = () => {
           id="printable-report-card"
           className="relative mx-auto w-full max-w-[800px] bg-white text-slate-900 p-8 rounded-2xl shadow-xl border border-slate-200 print:border-none print:shadow-none print:p-0 print:pt-[10mm] print:px-[12mm] print:pb-[20mm] print:m-0 print:max-w-none text-xs font-serif overflow-hidden"
         >
-          {/* School Logo Watermark */}
-          {school?.logo_url && (
-            <img
-              src={school.logo_url}
-              alt=""
-              aria-hidden="true"
-              className="report-watermark"
-            />
-          )}
+          {/* Professional Tiled Watermark */}
+          <ReportWatermark
+            schoolName={school?.name}
+            logoUrl={school?.logo_url}
+          />
 
           {/* Header */}
           <div className="border-b-2 border-slate-900 pb-4 mb-4 text-center relative z-10">

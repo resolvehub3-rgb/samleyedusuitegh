@@ -10,7 +10,28 @@
   }
 }
 
-/* Report Card Watermark */
+/* PWA Install Banner Animation */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Report Card Watermark — tiled security pattern */
+.report-watermark-container {
+  /* No blend mode — keep it simple for print compatibility */
+}
+
+/* Legacy single-logo watermark fallback */
 .report-watermark {
   position: absolute;
   top: 50%;
@@ -51,9 +72,13 @@
     border-radius: 0 !important;
   }
 
-  /* Watermark — slightly stronger on paper */
-  .report-watermark {
-    opacity: 0.05 !important;
+  /* Watermark — ensure it prints */
+  .report-watermark-container {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: absolute !important;
+    z-index: 0 !important;
   }
 
   /* Report card footer - always at bottom */
