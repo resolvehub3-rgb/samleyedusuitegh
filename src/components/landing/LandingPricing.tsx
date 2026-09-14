@@ -65,6 +65,49 @@ function SubscriptionFaqItem({ question, answer, index }: { key?: string; questi
   );
 }
 
+const stepStyles = [
+  {
+    gradient: 'from-orange-500 to-amber-500',
+    iconShadow: 'shadow-orange-500/30',
+    chip: 'bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border-orange-200/60 dark:border-orange-800/40',
+    arrow: 'text-orange-400',
+    hoverShadow: 'hover:shadow-orange-500/15',
+    hoverRing: 'hover:ring-orange-200 dark:hover:ring-orange-500/30',
+  },
+  {
+    gradient: 'from-amber-500 to-yellow-500',
+    iconShadow: 'shadow-amber-500/30',
+    chip: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/40',
+    arrow: 'text-amber-400',
+    hoverShadow: 'hover:shadow-amber-500/15',
+    hoverRing: 'hover:ring-amber-200 dark:hover:ring-amber-500/30',
+  },
+  {
+    gradient: 'from-violet-500 to-purple-600',
+    iconShadow: 'shadow-violet-500/30',
+    chip: 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border-violet-200/60 dark:border-violet-800/40',
+    arrow: 'text-violet-400',
+    hoverShadow: 'hover:shadow-violet-500/15',
+    hoverRing: 'hover:ring-violet-200 dark:hover:ring-violet-500/30',
+  },
+  {
+    gradient: 'from-sky-500 to-blue-600',
+    iconShadow: 'shadow-sky-500/30',
+    chip: 'bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border-sky-200/60 dark:border-sky-800/40',
+    arrow: 'text-sky-400',
+    hoverShadow: 'hover:shadow-sky-500/15',
+    hoverRing: 'hover:ring-sky-200 dark:hover:ring-sky-500/30',
+  },
+  {
+    gradient: 'from-emerald-500 to-teal-600',
+    iconShadow: 'shadow-emerald-500/30',
+    chip: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/40',
+    arrow: 'text-emerald-400',
+    hoverShadow: 'hover:shadow-emerald-500/15',
+    hoverRing: 'hover:ring-emerald-200 dark:hover:ring-emerald-500/30',
+  },
+];
+
 export function LandingPricing({ onNavigateToLogin, onNavigateToRegister }: LandingPricingProps) {
   const { subscriptionFaqs } = useFaq();
 
@@ -202,24 +245,40 @@ export function LandingPricing({ onNavigateToLogin, onNavigateToRegister }: Land
               </span>
             </h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
             {steps.map((step, i) => {
               const Icon = step.icon;
+              const styles = stepStyles[i];
               return (
                 <div key={i} className="relative group">
-                  <div className="bg-white dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/40 rounded-2xl p-6 text-center h-full hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none hover:border-orange-200 dark:hover:border-orange-800/30 transition-all duration-300 group-hover:-translate-y-1">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/30 text-orange-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                      <Icon className="w-6 h-6" />
+                  <div
+                    className={`relative bg-white dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/40 rounded-2xl p-6 text-center h-full ring-1 ring-transparent ${styles.hoverRing} hover:shadow-xl ${styles.hoverShadow} hover:border-transparent hover:-translate-y-1.5 transition-all duration-300`}
+                  >
+                    {/* Ghost step number */}
+                    <span
+                      aria-hidden
+                      className={`absolute top-2 right-3 text-5xl font-black leading-none bg-gradient-to-br ${styles.gradient} bg-clip-text text-transparent opacity-10 select-none pointer-events-none`}
+                    >
+                      {step.step}
+                    </span>
+
+                    <div
+                      className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${styles.gradient} flex items-center justify-center mx-auto mb-4 shadow-lg ${styles.iconShadow} group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300`}
+                    >
+                      <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <div className="text-[11px] font-bold text-orange-500 dark:text-orange-400 mb-1.5 uppercase tracking-wider">
+
+                    <span
+                      className={`inline-block px-2.5 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider mb-2 ${styles.chip}`}
+                    >
                       Step {step.step}
-                    </div>
+                    </span>
                     <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{step.title}</h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{step.desc}</p>
                   </div>
                   {i < steps.length - 1 && (
-                    <div className="hidden lg:block absolute top-1/2 -right-2 transform -translate-y-1/2 z-10">
-                      <ArrowRight className="w-5 h-5 text-orange-300 dark:text-orange-700" />
+                    <div className="hidden lg:flex absolute top-1/2 -right-[18px] -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700/60 shadow-md shadow-slate-200/50 dark:shadow-none items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <ArrowRight className={`w-4 h-4 ${styles.arrow}`} />
                     </div>
                   )}
                 </div>
