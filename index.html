@@ -42,6 +42,14 @@
       body { opacity: 0; transition: opacity 0.15s; }
       body.loaded { opacity: 1; }
     </style>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('samleyedu-theme');
+        var dark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+        else document.documentElement.classList.add('light');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
