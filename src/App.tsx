@@ -204,6 +204,7 @@ function AppContent() {
 
     const goHome = () => {
       window.history.pushState({}, '', '/');
+      setShowLegalPage(null);
       setShowLanding(true);
       setAuthMode('login');
     };

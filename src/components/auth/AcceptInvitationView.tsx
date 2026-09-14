@@ -255,8 +255,9 @@ export const AcceptInvitationView: React.FC<AcceptInvitationViewProps> = ({ onNa
             {/* Back to Home — Desktop compact */}
             {onNavigateToHome && (
               <button
+                type="button"
                 onClick={onNavigateToHome}
-                className="hidden lg:inline-flex absolute top-5 left-5 items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-sm text-xs font-semibold"
+                className="hidden lg:inline-flex absolute top-5 left-5 z-50 items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-sm text-xs font-semibold"
                 aria-label="Back to home"
               >
                 <ArrowLeft className="w-4 h-4" />
