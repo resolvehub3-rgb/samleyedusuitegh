@@ -10,6 +10,7 @@ import { SubscriptionExpiredView } from './components/subscription/SubscriptionE
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { LandingPage } from './components/landing/LandingPage';
+import { AboutPage } from './components/about/AboutPage';
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import { TermsOfService } from './components/legal/TermsOfService';
 
@@ -135,6 +136,7 @@ function AppContent() {
     if (path === '/terms-of-service') return 'terms';
     return null;
   });
+  const [showAboutPage, setShowAboutPage] = useState<boolean>(() => window.location.pathname === '/about');
   const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   // Handle browser back/forward for legal pages
@@ -147,11 +149,17 @@ function AppContent() {
       } else if (path === '/terms-of-service') {
         setShowLegalPage('terms');
         setShowLanding(false);
+      } else if (path === '/about') {
+        setShowLegalPage(null);
+        setShowLanding(false);
+        setShowAboutPage(true);
       } else if (path === '/') {
         setShowLegalPage(null);
+        setShowAboutPage(false);
         setShowLanding(true);
       } else {
         setShowLegalPage(null);
+        setShowAboutPage(false);
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -205,9 +213,23 @@ function AppContent() {
     const goHome = () => {
       window.history.pushState({}, '', '/');
       setShowLegalPage(null);
+      setShowAboutPage(false);
       setShowLanding(true);
       setAuthMode('login');
     };
+
+    // Show About page (standalone)
+    if (showAboutPage) {
+      return (
+        <AboutPage
+          onBack={() => {
+            window.history.pushState({}, '', '/');
+            setShowAboutPage(false);
+            setShowLanding(true);
+          }}
+        />
+      );
+    }
 
     // Show legal pages (not in navbar, standalone)
     if (showLegalPage === 'privacy') {
@@ -256,6 +278,11 @@ function AppContent() {
             window.history.pushState({}, '', '/terms-of-service');
             setShowLanding(false);
             setShowLegalPage('terms');
+          }}
+          onNavigateToAbout={() => {
+            window.history.pushState({}, '', '/about');
+            setShowLanding(false);
+            setShowAboutPage(true);
           }}
         />
       );

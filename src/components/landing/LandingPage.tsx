@@ -21,14 +21,16 @@ interface LandingPageProps {
   onNavigateToRegister: () => void;
   onNavigateToPrivacy?: () => void;
   onNavigateToTerms?: () => void;
+  onNavigateToAbout?: () => void;
 }
 
-export function LandingPage({ onNavigateToLogin, onNavigateToRegister, onNavigateToPrivacy, onNavigateToTerms }: LandingPageProps) {
+export function LandingPage({ onNavigateToLogin, onNavigateToRegister, onNavigateToPrivacy, onNavigateToTerms, onNavigateToAbout }: LandingPageProps) {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900 transition-colors">
       <LandingNavbar
         onNavigateToLogin={onNavigateToLogin}
         onNavigateToRegister={onNavigateToRegister}
+        onNavigateToAbout={onNavigateToAbout}
       />
       <main>
         <LandingHero onNavigateToRegister={onNavigateToRegister} />
@@ -57,6 +59,7 @@ export function LandingPage({ onNavigateToLogin, onNavigateToRegister, onNavigat
         onNavigateToRegister={onNavigateToRegister}
         onNavigateToPrivacy={onNavigateToPrivacy}
         onNavigateToTerms={onNavigateToTerms}
+        onNavigateToAbout={onNavigateToAbout}
       />
     </div>
   );

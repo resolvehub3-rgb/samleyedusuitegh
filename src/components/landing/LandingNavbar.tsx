@@ -5,6 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 interface LandingNavbarProps {
   onNavigateToLogin: () => void;
   onNavigateToRegister: () => void;
+  onNavigateToAbout?: () => void;
 }
 
 const navLinks = [
@@ -16,7 +17,7 @@ const navLinks = [
   { label: 'Contact', href: '#contact' },
 ];
 
-export function LandingNavbar({ onNavigateToLogin, onNavigateToRegister }: LandingNavbarProps) {
+export function LandingNavbar({ onNavigateToLogin, onNavigateToRegister, onNavigateToAbout }: LandingNavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -75,6 +76,14 @@ export function LandingNavbar({ onNavigateToLogin, onNavigateToRegister }: Landi
                 {link.label}
               </a>
             ))}
+            {onNavigateToAbout && (
+              <button
+                onClick={onNavigateToAbout}
+                className="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-orange-600 dark:hover:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors"
+              >
+                About
+              </button>
+            )}
           </div>
 
           {/* Desktop Actions */}
@@ -141,6 +150,17 @@ export function LandingNavbar({ onNavigateToLogin, onNavigateToRegister }: Landi
                 {link.label}
               </a>
             ))}
+            {onNavigateToAbout && (
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  onNavigateToAbout();
+                }}
+                className="w-full text-left px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 rounded-xl transition-colors"
+              >
+                About
+              </button>
+            )}
             <div className="pt-3 space-y-2 border-t border-slate-100 dark:border-slate-800 mt-2">
               <button
                 onClick={() => {

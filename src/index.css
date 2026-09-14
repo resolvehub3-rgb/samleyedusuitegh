@@ -28,6 +28,86 @@
   animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* About page — premium ambient animations */
+@keyframes float-y {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes float-y-smooth {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  33% {
+    transform: translateY(-14px) translateX(6px);
+  }
+  66% {
+    transform: translateY(6px) translateX(-6px);
+  }
+}
+
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-float-slow {
+  animation: float-y 7s ease-in-out infinite;
+}
+
+.animate-float-slower {
+  animation: float-y-smooth 11s ease-in-out infinite;
+}
+
+.animate-gradient-x {
+  animation: gradient-x 4s ease infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-soft 3.2s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slower {
+  animation: spin-slow 24s linear infinite;
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-slow,
+  .animate-float-slower,
+  .animate-gradient-x,
+  .animate-pulse-slow,
+  .animate-spin-slower {
+    animation: none;
+  }
+}
+
 /* Report Card Watermark — tiled security pattern */
 .report-watermark-container {
   /* No blend mode — keep it simple for print compatibility */

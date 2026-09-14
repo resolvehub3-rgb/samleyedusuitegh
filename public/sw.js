@@ -1,6 +1,6 @@
-const CACHE_NAME = 'samleyedusuite-v1';
-const STATIC_CACHE = 'samleyedusuite-static-v1';
-const DYNAMIC_CACHE = 'samleyedusuite-dynamic-v1';
+const CACHE_NAME = 'samleyedusuite-v2';
+const STATIC_CACHE = 'samleyedusuite-static-v2';
+const DYNAMIC_CACHE = 'samleyedusuite-dynamic-v2';
 
 // Assets to cache on install
 const STATIC_ASSETS = [
@@ -9,8 +9,23 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/logo.png',
   '/logo1.png',
-  '/favicon.png'
+  '/favicon.png',
+  '/founder.jpg',
+  '/assistant-founder.jpg'
 ];
+
+// Guard: never cache non-asset payloads (e.g. the SPA's index.html fallback)
+// under asset URLs — that poisoned the founder photos before.
+function isCacheableAsset(response) {
+  if (!response || !response.ok) return false;
+  const type = (response.headers.get('content-type') || '').toLowerCase();
+  return (
+    type.startsWith('image/') ||
+    type.startsWith('font/') ||
+    type.includes('css') ||
+    type.includes('javascript')
+  );
+}
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
@@ -80,9 +95,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(request)
         .then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
+          // Skip poisoned cache entries (HTML stored under an asset URL)
+          if (cachedResponse && isCacheableAsset(cachedResponse)) return cachedResponse;
           return fetch(request).then((response) => {
-            if (response.ok) {
+            if (isCacheableAsset(response)) {
               const responseClone = response.clone();
               caches.open(STATIC_CACHE).then((cache) => {
                 cache.put(request, responseClone);

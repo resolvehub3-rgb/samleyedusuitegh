@@ -6,9 +6,10 @@ interface LandingFooterProps {
   onNavigateToRegister: () => void;
   onNavigateToPrivacy?: () => void;
   onNavigateToTerms?: () => void;
+  onNavigateToAbout?: () => void;
 }
 
-export function LandingFooter({ onNavigateToLogin, onNavigateToRegister, onNavigateToPrivacy, onNavigateToTerms }: LandingFooterProps) {
+export function LandingFooter({ onNavigateToLogin, onNavigateToRegister, onNavigateToPrivacy, onNavigateToTerms, onNavigateToAbout }: LandingFooterProps) {
   const scrollToSection = (href: string) => {
     document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -53,6 +54,16 @@ export function LandingFooter({ onNavigateToLogin, onNavigateToRegister, onNavig
                   </a>
                 </li>
               ))}
+              {onNavigateToAbout && (
+                <li>
+                  <button
+                    onClick={onNavigateToAbout}
+                    className="text-sm text-slate-400 hover:text-white transition-colors"
+                  >
+                    About Us
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
 
