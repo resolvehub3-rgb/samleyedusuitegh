@@ -31,16 +31,33 @@ export const AnnouncementManagement: React.FC = () => {
     if (!school) return;
     try {
       setLoading(true);
-      const [annRes, clsRes] = await Promise.all([
+      const [annRes, clsRes, platformAnnRes] = await Promise.all([
         supabase
           .from('announcements')
           .select('*, author:profiles!author_id(*)')
           .eq('school_id', school.id)
           .order('created_at', { ascending: false }),
-        supabase.from('classes').select('*').eq('school_id', school.id).order('order_index')
+        supabase.from('classes').select('*').eq('school_id', school.id).order('order_index'),
+        supabase
+          .from('platform_announcements')
+          .select('*')
+          .eq('is_published', true)
+          .order('created_at', { ascending: false }),
       ]);
 
-      setAnnouncements((annRes.data || []) as any);
+      // Merge school announcements with platform announcements, prefixed to distinguish
+      const schoolAnns = (annRes.data || []).map((a: any) => ({ ...a, _type: 'school' }));
+      const platformAnns = (platformAnnRes.data || []).map((a: any) => ({
+        id: a.id,
+        title: a.title,
+        content: a.content,
+        target_audience: a.target === 'all' ? 'all' : a.target === 'teachers' ? 'teachers' : a.target === 'parents' ? 'parents' : 'all',
+        created_at: a.created_at,
+        author: { full_name: 'Platform Admin' },
+        _type: 'platform',
+      }));
+
+      setAnnouncements([...platformAnns, ...schoolAnns] as any);
       setClasses((clsRes.data || []) as SchoolClass[]);
       if (clsRes.data && clsRes.data.length > 0 && !targetClassId) {
         setTargetClassId(clsRes.data[0].id);
@@ -56,10 +73,13 @@ export const AnnouncementManagement: React.FC = () => {
     fetchAnnouncements();
 
     if (!school) return;
-    // Realtime announcements
+    // Realtime announcements (school-level)
     const channel = supabase
       .channel(`announcements_${school.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements', filter: `school_id=eq.${school.id}` }, () => {
+        fetchAnnouncements();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'platform_announcements' }, () => {
         fetchAnnouncements();
       })
       .subscribe();
@@ -178,18 +198,23 @@ export const AnnouncementManagement: React.FC = () => {
             >
               <div>
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <Badge
-                    variant={
-                      ann.target_audience === 'all'
-                        ? 'primary'
-                        : ann.target_audience === 'parents'
-                        ? 'success'
-                        : 'info'
-                    }
-                    size="sm"
-                  >
-                    Audience: {ann.target_audience.toUpperCase()}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge
+                      variant={
+                        ann.target_audience === 'all'
+                          ? 'primary'
+                          : ann.target_audience === 'parents'
+                          ? 'success'
+                          : 'info'
+                      }
+                      size="sm"
+                    >
+                      Audience: {ann.target_audience.toUpperCase()}
+                    </Badge>
+                    {(ann as any)._type === 'platform' && (
+                      <Badge variant="warning" size="sm">Platform</Badge>
+                    )}
+                  </div>
                   <span className="text-[10px] text-slate-400">
                     {new Date(ann.created_at).toLocaleDateString()}
                   </span>
