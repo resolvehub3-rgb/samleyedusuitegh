@@ -227,6 +227,11 @@ function AppContent() {
             setShowAboutPage(false);
             setShowLanding(true);
           }}
+          onRegister={() => {
+            window.history.pushState({}, '', '/register');
+            setShowAboutPage(false);
+            setAuthMode('register');
+          }}
         />
       );
     }

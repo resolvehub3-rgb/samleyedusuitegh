@@ -21,6 +21,7 @@ import { useScrollAnimation } from '../landing/useScrollAnimation';
 
 interface AboutPageProps {
   onBack: () => void;
+  onRegister?: () => void;
 }
 
 /* ---------------------------------- Hooks ---------------------------------- */
@@ -242,7 +243,7 @@ const milestones = [
 
 /* --------------------------------- Page ------------------------------------ */
 
-export function AboutPage({ onBack }: AboutPageProps) {
+export function AboutPage({ onBack, onRegister }: AboutPageProps) {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -564,7 +565,7 @@ export function AboutPage({ onBack }: AboutPageProps) {
                   your work lighter and your school stronger.
                 </p>
                 <button
-                  onClick={onBack}
+                  onClick={onRegister || onBack}
                   type="button"
                   className="mt-8 inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold text-orange-600 bg-white shadow-xl shadow-orange-900/20 hover:shadow-2xl hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
                 >
