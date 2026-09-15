@@ -631,10 +631,14 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const { data, error } = await supabase
         .from('platform_announcements')
-        .select('*, author:profiles!author_id(full_name, email)')
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
+      if (error) {
+        console.error('Supabase error fetching announcements:', error);
+        return;
+      }
+      if (data) {
         setAnnouncements(data as PlatformAnnouncement[]);
       }
     } catch (err) {
@@ -654,18 +658,27 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         published_at: new Date().toISOString(),
       });
 
-      if (!error) {
-        await logAuditEvent(
-          user.id, user.email || '', 'super_admin',
-          undefined, undefined, 'announcement_published',
-          'platform_announcement', undefined,
-          `Platform announcement published: "${data.title}"`
-        );
-        await fetchAnnouncements();
-        return true;
+      if (error) {
+        console.error('Failed to create announcement:', error);
+        return false;
       }
-      return false;
-    } catch {
+
+      // Fire-and-forget: log audit
+      (async () => {
+        try {
+          await logAuditEvent(
+            user.id, user.email || '', 'super_admin',
+            undefined, undefined, 'announcement_published',
+            'platform_announcement', undefined,
+            `Platform announcement published: "${data.title}"`
+          );
+        } catch {}
+      })();
+
+      await fetchAnnouncements();
+      return true;
+    } catch (err) {
+      console.error('Error creating announcement:', err);
       return false;
     }
   };
