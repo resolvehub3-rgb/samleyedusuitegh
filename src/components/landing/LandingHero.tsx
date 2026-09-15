@@ -1,11 +1,13 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
+import { usePublicPlatformSettings } from '../../hooks/usePublicPlatformSettings';
 
 interface LandingHeroProps {
   onNavigateToRegister: () => void;
 }
 
 export function LandingHero({ onNavigateToRegister }: LandingHeroProps) {
+  const { platform_motto } = usePublicPlatformSettings();
   const scrollToFeatures = () => {
     document.querySelector('#features')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -38,9 +40,7 @@ export function LandingHero({ onNavigateToRegister }: LandingHeroProps) {
             </h1>
 
             <p className="mt-6 text-lg text-slate-600 dark:text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              SamleyEduSuite gives Ghanaian private schools one simple platform to manage
-              students, teachers, parents, attendance, academic performance, reports,
-              communication and payments.
+              {platform_motto}
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">

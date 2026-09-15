@@ -1,11 +1,13 @@
 import React from 'react';
 import { GraduationCap, ArrowLeft, Mail, Phone, MapPin } from 'lucide-react';
+import { usePublicPlatformSettings } from '../../hooks/usePublicPlatformSettings';
 
 interface TermsOfServiceProps {
   onBack: () => void;
 }
 
 export function TermsOfService({ onBack }: TermsOfServiceProps) {
+  const { contact_email } = usePublicPlatformSettings();
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900 transition-colors">
       {/* Header */}
@@ -268,7 +270,7 @@ export function TermsOfService({ onBack }: TermsOfServiceProps) {
             <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-3">
               <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
                 <Mail className="w-5 h-5 text-orange-500 shrink-0" />
-                <span className="text-sm">support@samleyedusuite.com</span>
+                <span className="text-sm">{contact_email}</span>
               </div>
               <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
                 <Phone className="w-5 h-5 text-orange-500 shrink-0" />

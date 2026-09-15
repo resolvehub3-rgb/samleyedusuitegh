@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, MessageSquare, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { SectionWrapper } from './SectionWrapper';
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
+import { usePublicPlatformSettings } from '../../hooks/usePublicPlatformSettings';
 
 export function LandingContact() {
+  const { contact_email } = usePublicPlatformSettings();
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -59,7 +61,7 @@ export function LandingContact() {
     {
       icon: Mail,
       label: 'Email Us',
-      value: 'samteckdigital@gmail.com',
+      value: contact_email,
       description: 'We respond within 24 hours',
     },
     {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -8,6 +8,8 @@ import { FaqProvider } from './context/FaqContext';
 import { PwaInstallBanner } from './components/common/PwaInstallBanner';
 import { SubscriptionLockGuard } from './components/subscription/SubscriptionLockGuard';
 import { SubscriptionNotice } from './components/subscription/SubscriptionNotice';
+import { MaintenancePage } from './components/common/MaintenancePage';
+import { getSupabase } from './lib/supabase';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { LandingPage } from './components/landing/LandingPage';
@@ -168,6 +170,45 @@ function AppContent() {
 
   // Subscription hook MUST be called before any conditional returns (Rules of Hooks)
   const { isSuspended, isExpired, loading: subLoading, subscription } = useSubscription();
+
+  // Maintenance mode state
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(true);
+
+  // Fetch maintenance mode and subscribe to realtime changes
+  useEffect(() => {
+    const supabase = getSupabase();
+
+    const fetchMaintenanceMode = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('platform_settings')
+          .select('setting_value')
+          .eq('setting_key', 'maintenance_mode')
+          .single();
+
+        if (!error && data) {
+          setMaintenanceMode(data.setting_value === 'true');
+        }
+      } catch {}
+      setMaintenanceLoading(false);
+    };
+
+    fetchMaintenanceMode();
+
+    // Realtime: listen for changes to maintenance_mode
+    const channel = supabase
+      .channel('maintenance_mode_watch')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'platform_settings' }, (payload) => {
+        const row = payload.new as any;
+        if (row?.setting_key === 'maintenance_mode') {
+          setMaintenanceMode(row.setting_value === 'true');
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   // Show force password reset for teachers and parents with must_reset_password flag
   useEffect(() => {
@@ -439,6 +480,11 @@ function AppContent() {
         <p className="mt-4 text-xs font-semibold text-slate-600 dark:text-slate-400">Loading...</p>
       </div>
     );
+  }
+
+  // Maintenance mode: show maintenance page for non-super-admin users
+  if (maintenanceMode && !maintenanceLoading) {
+    return <MaintenancePage onLogout={logout} />;
   }
 
   return (
