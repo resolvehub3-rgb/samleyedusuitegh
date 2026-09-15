@@ -3,6 +3,7 @@ import { User } from '@supabase/supabase-js';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import {
   SuperAdminSchool,
+  SchoolStatus,
   PlatformSetting,
   AuditLog,
   PlatformAnnouncement,
@@ -388,6 +389,41 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // SCHOOLS
   // =========================================================================
 
+  // Compute display status based on school status and subscription status
+  const computeDisplayStatus = (schoolStatus: string | null, subscription: any): SchoolStatus => {
+    // If school is manually suspended/deactivated by super admin, that takes priority
+    if (schoolStatus === 'suspended') return 'suspended';
+    if (schoolStatus === 'deactivated') return 'deactivated';
+    if (schoolStatus === 'pending') return 'pending';
+
+    // If no subscription info, fall back to school status
+    if (!subscription) return (schoolStatus as SchoolStatus) || 'active';
+
+    const subStatus = subscription.status;
+
+    // Subscription-based status mapping
+    if (subStatus === 'SUSPENDED' || subStatus === 'EXPIRED' || subStatus === 'REJECTED') {
+      return 'deactivated';
+    }
+
+    // Check if trial has expired
+    if (subStatus === 'TRIAL' && subscription.trial_expires_at) {
+      if (new Date(subscription.trial_expires_at).getTime() < Date.now()) {
+        return 'deactivated';
+      }
+    }
+
+    // Check if paid subscription has expired
+    if (subStatus === 'ACTIVE' && subscription.subscription_expires_at) {
+      if (new Date(subscription.subscription_expires_at).getTime() < Date.now()) {
+        return 'deactivated';
+      }
+    }
+
+    // Otherwise, use the school's own status (default active)
+    return (schoolStatus as SchoolStatus) || 'active';
+  };
+
   const fetchSchools = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -396,20 +432,29 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        // Get counts for each school
+        // Get counts and subscription info for each school
         const schoolsWithCounts = await Promise.all(
           data.map(async (school: any) => {
-            const [studentsRes, teachersRes, parentsRes] = await Promise.all([
+            const [studentsRes, teachersRes, parentsRes, subRes] = await Promise.all([
               supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', school.id),
               supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('school_id', school.id).eq('role', 'teacher'),
               supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('school_id', school.id).eq('role', 'parent'),
+              supabase.from('school_subscriptions').select('status, trial_expires_at, subscription_expires_at').eq('school_id', school.id).maybeSingle(),
             ]);
+
+            const subscription = subRes.data;
+            const schoolStatus = school.status || 'active';
+
             return {
               ...school,
-              status: school.status || 'active',
+              status: schoolStatus,
               student_count: studentsRes.count || 0,
               teacher_count: teachersRes.count || 0,
               parent_count: parentsRes.count || 0,
+              subscription_status: subscription?.status || null,
+              trial_expires_at: subscription?.trial_expires_at || null,
+              subscription_expires_at: subscription?.subscription_expires_at || null,
+              display_status: computeDisplayStatus(schoolStatus, subscription),
             };
           })
         );
@@ -919,6 +964,7 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         .channel('super_admin_dashboard')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'schools' }, () => {
           fetchDashboardStats();
+          fetchSchools();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
           fetchDashboardStats();
@@ -927,6 +973,10 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           fetchDashboardStats();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+          fetchDashboardStats();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'school_subscriptions' }, () => {
+          fetchSchools();
           fetchDashboardStats();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_logs' }, () => {
@@ -950,7 +1000,7 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         supabase.removeChannel(channel);
       };
     }
-  }, [isSuperAdmin, user, supabase, fetchAllDashboardData, fetchDashboardStats, fetchRecentActivity, fetchContactMessages]);
+  }, [isSuperAdmin, user, supabase, fetchAllDashboardData, fetchDashboardStats, fetchSchools, fetchRecentActivity, fetchContactMessages]);
 
   // =========================================================================
   // GLOBAL SEARCH

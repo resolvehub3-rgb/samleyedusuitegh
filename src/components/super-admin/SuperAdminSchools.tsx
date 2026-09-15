@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import {
   School,
   Search,
@@ -14,6 +14,7 @@ import {
   Eye,
   MoreVertical,
   Building2,
+  Trash2,
 } from 'lucide-react';
 import { useSuperAdmin } from '../../context/SuperAdminContext';
 import { Badge } from '../common/Badge';
@@ -34,10 +35,26 @@ export const SuperAdminSchools: React.FC<SuperAdminSchoolsProps> = ({ onNavigate
   const [page, setPage] = useState(1);
   const [confirmAction, setConfirmAction] = useState<{ schoolId: string; schoolName: string; status: string } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ schoolId: string; schoolName: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchSchools();
   }, [fetchSchools]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+    if (openMenuId) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openMenuId]);
 
   const filteredSchools = useMemo(() => {
     return schools.filter((s) => {
@@ -47,7 +64,8 @@ export const SuperAdminSchools: React.FC<SuperAdminSchoolsProps> = ({ onNavigate
         s.email?.toLowerCase().includes(search.toLowerCase()) ||
         s.region?.toLowerCase().includes(search.toLowerCase()) ||
         s.district?.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
+      const displayStatus = s.display_status || s.status || 'active';
+      const matchesStatus = statusFilter === 'all' || displayStatus === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [schools, search, statusFilter]);
@@ -61,6 +79,26 @@ export const SuperAdminSchools: React.FC<SuperAdminSchoolsProps> = ({ onNavigate
     const success = await updateSchoolStatus(confirmAction.schoolId, confirmAction.status);
     setActionLoading(false);
     setConfirmAction(null);
+    setOpenMenuId(null);
+  };
+
+  const handleDeleteSchool = async () => {
+    if (!deleteConfirm) return;
+    setDeleteLoading(true);
+    try {
+      const { getSupabase } = await import('../../lib/supabase');
+      const supabase = getSupabase();
+      const { error } = await supabase.from('schools').delete().eq('id', deleteConfirm.schoolId);
+      if (!error) {
+        await fetchSchools();
+      }
+    } catch (err) {
+      console.error('Error deleting school:', err);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteConfirm(null);
+      setOpenMenuId(null);
+    }
   };
 
   const statusBadge = (status: string) => {
@@ -177,7 +215,7 @@ export const SuperAdminSchools: React.FC<SuperAdminSchoolsProps> = ({ onNavigate
                       {school.parent_count || 0}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {statusBadge(school.status)}
+                      {statusBadge(school.display_status || school.status)}
                     </td>
                     <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
                       {new Date(school.created_at).toLocaleDateString()}
@@ -191,36 +229,48 @@ export const SuperAdminSchools: React.FC<SuperAdminSchoolsProps> = ({ onNavigate
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <div className="relative group">
-                          <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+                        <div className="relative" ref={openMenuId === school.id ? menuRef : undefined}>
+                          <button
+                            onClick={() => setOpenMenuId(openMenuId === school.id ? null : school.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                          >
                             <MoreVertical className="w-4 h-4" />
                           </button>
-                          <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1 z-10 hidden group-hover:block">
-                            {school.status !== 'active' && (
+                          {openMenuId === school.id && (
+                            <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1 z-10">
+                              {(school.display_status || school.status) !== 'active' && (
+                                <button
+                                  onClick={() => { setConfirmAction({ schoolId: school.id, schoolName: school.name, status: 'active' }); setOpenMenuId(null); }}
+                                  className="w-full text-left px-3 py-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 cursor-pointer"
+                                >
+                                  Activate School
+                                </button>
+                              )}
+                              {(school.display_status || school.status) === 'active' && (
+                                <button
+                                  onClick={() => { setConfirmAction({ schoolId: school.id, schoolName: school.name, status: 'suspended' }); setOpenMenuId(null); }}
+                                  className="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+                                >
+                                  Suspend School
+                                </button>
+                              )}
+                              {(school.display_status || school.status) !== 'deactivated' && (
+                                <button
+                                  onClick={() => { setConfirmAction({ schoolId: school.id, schoolName: school.name, status: 'deactivated' }); setOpenMenuId(null); }}
+                                  className="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                                >
+                                  Deactivate School
+                                </button>
+                              )}
+                              <hr className="my-1 border-slate-100 dark:border-slate-800" />
                               <button
-                                onClick={() => setConfirmAction({ schoolId: school.id, schoolName: school.name, status: 'active' })}
-                                className="w-full text-left px-3 py-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 cursor-pointer"
+                                onClick={() => { setDeleteConfirm({ schoolId: school.id, schoolName: school.name }); setOpenMenuId(null); }}
+                                className="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer flex items-center gap-2"
                               >
-                                Activate School
+                                <Trash2 className="w-3.5 h-3.5" /> Delete School
                               </button>
-                            )}
-                            {school.status === 'active' && (
-                              <button
-                                onClick={() => setConfirmAction({ schoolId: school.id, schoolName: school.name, status: 'suspended' })}
-                                className="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
-                              >
-                                Suspend School
-                              </button>
-                            )}
-                            {school.status !== 'deactivated' && (
-                              <button
-                                onClick={() => setConfirmAction({ schoolId: school.id, schoolName: school.name, status: 'deactivated' })}
-                                className="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
-                              >
-                                Deactivate School
-                              </button>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -251,7 +301,7 @@ export const SuperAdminSchools: React.FC<SuperAdminSchoolsProps> = ({ onNavigate
                       <p className="text-[11px] text-slate-500">{school.district}, {school.region}</p>
                     </div>
                   </div>
-                  {statusBadge(school.status)}
+                  {statusBadge(school.display_status || school.status)}
                 </div>
                 <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                   <div className="text-center">
@@ -319,6 +369,18 @@ export const SuperAdminSchools: React.FC<SuperAdminSchoolsProps> = ({ onNavigate
         confirmLabel={confirmAction?.status === 'active' ? 'Activate' : confirmAction?.status === 'suspended' ? 'Suspend' : 'Deactivate'}
         variant={confirmAction?.status === 'active' ? 'primary' : 'danger'}
         loading={actionLoading}
+      />
+
+      {/* Delete School Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={handleDeleteSchool}
+        title="Delete School"
+        message={`Are you sure you want to permanently delete "${deleteConfirm?.schoolName}"? This action cannot be undone and will remove all associated data.`}
+        confirmLabel="Delete School"
+        variant="danger"
+        loading={deleteLoading}
       />
     </div>
   );

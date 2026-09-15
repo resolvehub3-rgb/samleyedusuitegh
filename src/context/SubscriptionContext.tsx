@@ -78,10 +78,27 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const daysRemaining = getDaysRemaining(
     subscription?.status === 'TRIAL' ? subscription.trial_expires_at : subscription?.subscription_expires_at
   );
-  const isExpired = subscription?.status === 'EXPIRED' || subscription?.status === 'SUSPENDED';
+
+  // Check if the subscription has passed its expiry date (handles trial and active subscriptions)
+  const isTrialExpired = (
+    subscription?.status === 'TRIAL' &&
+    subscription?.trial_expires_at &&
+    new Date(subscription.trial_expires_at).getTime() < Date.now()
+  );
+  const isPaidExpired = (
+    subscription?.status === 'ACTIVE' &&
+    subscription?.subscription_expires_at &&
+    new Date(subscription.subscription_expires_at).getTime() < Date.now()
+  );
+  const isExpired = (
+    subscription?.status === 'EXPIRED' ||
+    subscription?.status === 'SUSPENDED' ||
+    isTrialExpired ||
+    isPaidExpired
+  );
   const isSuspended = subscription?.status === 'SUSPENDED';
-  const isActive = subscription?.status === 'ACTIVE';
-  const isTrial = subscription?.status === 'TRIAL';
+  const isActive = subscription?.status === 'ACTIVE' && !isPaidExpired;
+  const isTrial = subscription?.status === 'TRIAL' && !isTrialExpired;
 
   // Fetch school subscription
   const fetchSubscription = useCallback(async () => {
@@ -147,7 +164,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (!school) return { success: false, error: 'No school context' };
 
     try {
-      const { error } = await supabase.from('subscription_payments').insert({
+      const { data: paymentData, error } = await supabase.from('subscription_payments').insert({
         school_id: school.id,
         subscription_id: subscription?.id || null,
         amount: data.amount,
@@ -157,7 +174,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         screenshot_url: data.screenshot_url,
         note: data.note || null,
         status: 'PENDING_VERIFICATION',
-      });
+      }).select('id').single();
 
       if (error) {
         if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
@@ -166,37 +183,44 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return { success: false, error: error.message };
       }
 
-      // Log audit
-      await supabase.rpc('log_subscription_event', {
-        p_school_id: school.id,
-        p_actor_id: user?.id || null,
-        p_actor_email: user?.email || null,
-        p_actor_role: 'admin',
-        p_action: 'payment_submitted',
-        p_entity: 'subscription_payment',
-        p_entity_id: null,
-        p_description: `Payment submitted: ${data.amount} GHS, Transaction: ${data.transaction_id}`,
-        p_metadata: JSON.stringify({ amount: data.amount, transaction_id: data.transaction_id }),
-      });
-
-      // Notify super admins
-      const { data: superAdmins } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('role', 'super_admin');
-
-      if (superAdmins && superAdmins.length > 0) {
-        for (const sa of superAdmins) {
-          await supabase.from('notifications').insert({
-            school_id: school.id,
-            user_id: sa.id,
-            type: 'payment',
-            title: 'New Subscription Payment',
-            message: `${school.name} has submitted a subscription payment of GH₵${data.amount}. Transaction: ${data.transaction_id}.`,
-            is_read: false,
+      // Fire-and-forget: Log audit (don't block payment success)
+      (async () => {
+        try {
+          await supabase.rpc('log_subscription_event', {
+            p_school_id: school.id,
+            p_actor_id: user?.id || null,
+            p_actor_email: user?.email || null,
+            p_actor_role: 'admin',
+            p_action: 'payment_submitted',
+            p_entity: 'subscription_payment',
+            p_entity_id: paymentData?.id || null,
+            p_description: `Payment submitted: ${data.amount} GHS, Transaction: ${data.transaction_id}`,
+            p_metadata: JSON.stringify({ amount: data.amount, transaction_id: data.transaction_id }),
           });
-        }
-      }
+        } catch {}
+      })();
+
+      // Fire-and-forget: Notify super admins via platform_notifications (NOT notifications table)
+      (async () => {
+        try {
+          const { data: superAdmins } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('role', 'super_admin');
+
+          if (superAdmins && superAdmins.length > 0) {
+            await Promise.all(superAdmins.map(sa =>
+              supabase.from('platform_notifications').insert({
+                user_id: sa.id,
+                type: 'payment',
+                title: 'New Subscription Payment',
+                message: `${school.name} has submitted a subscription payment of GH₵${data.amount}. Transaction: ${data.transaction_id}.`,
+                is_read: false,
+              })
+            ));
+          }
+        } catch {}
+      })();
 
       await fetchPayments();
       return { success: true };
@@ -254,10 +278,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       const { data, error } = await supabase
         .from('subscription_payments')
-        .select('*, school:schools(name, logo_url), approver:profiles!approved_by(full_name, email)')
+        .select('*, school:schools(name, logo_url)')
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
+      if (error) {
+        console.error('Supabase error fetching payments:', error);
+        return;
+      }
+      if (data) {
         setAllPayments(data as SubscriptionPayment[]);
       }
     } catch (err) {
@@ -267,6 +295,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const approvePayment = async (paymentId: string): Promise<{ success: boolean; error?: string }> => {
     try {
+      // Fetch payment details before approval (for notification content)
+      const { data: paymentBefore } = await supabase
+        .from('subscription_payments')
+        .select('school_id, amount, currency, transaction_id')
+        .eq('id', paymentId)
+        .single();
+
       const { data, error } = await supabase.rpc('approve_subscription_payment', {
         p_payment_id: paymentId,
         p_actor_id: user?.id,
@@ -279,6 +314,33 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       await fetchAllPayments();
       await fetchAllSubscriptions();
       await fetchSubscriptionStats();
+
+      // Fire-and-forget: notify school admin from JS side (backup in case RPC notification failed)
+      if (paymentBefore) {
+        (async () => {
+          try {
+            const { data: adminProfiles } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('school_id', paymentBefore.school_id)
+              .eq('role', 'admin');
+
+            if (adminProfiles && adminProfiles.length > 0) {
+              await Promise.all(adminProfiles.map(p =>
+                supabase.from('notifications').insert({
+                  school_id: paymentBefore.school_id,
+                  user_id: p.id,
+                  type: 'payment',
+                  title: 'Subscription Payment Approved',
+                  message: `Your payment of GH₵${paymentBefore.amount} (Transaction: ${paymentBefore.transaction_id}) has been approved. Your subscription is now active.`,
+                  is_read: false,
+                })
+              ));
+            }
+          } catch {}
+        })();
+      }
+
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message };

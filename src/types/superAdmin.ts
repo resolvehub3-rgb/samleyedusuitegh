@@ -51,6 +51,12 @@ export interface SuperAdminSchool {
   student_count?: number;
   teacher_count?: number;
   parent_count?: number;
+  // Subscription info (fetched from school_subscriptions)
+  subscription_status?: string | null;
+  trial_expires_at?: string | null;
+  subscription_expires_at?: string | null;
+  // Derived display status combining school + subscription
+  display_status?: SchoolStatus;
 }
 
 // Platform Settings

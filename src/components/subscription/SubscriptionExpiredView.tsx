@@ -55,6 +55,9 @@ export const SubscriptionExpiredView: React.FC = () => {
     const fileExt = screenshotFile.name.split('.').pop() || 'jpg';
     const filePath = `payment-screenshots/${school.id}/${Date.now()}.${fileExt}`;
 
+    // Auto-create bucket if missing (calls SECURITY DEFINER function)
+    await supabase.rpc('ensure_payment_screenshots_bucket');
+
     const { error } = await supabase.storage
       .from('payment-screenshots')
       .upload(filePath, screenshotFile, { upsert: false });
@@ -91,7 +94,7 @@ export const SubscriptionExpiredView: React.FC = () => {
     try {
       const screenshotUrl = await uploadScreenshot();
       if (!screenshotUrl) {
-        setSubmitError('Failed to upload screenshot. Please try again.');
+        setSubmitError('Failed to upload screenshot. The storage bucket may not be configured. Please contact your administrator to run the payment-screenshots SQL fix script.');
         setSubmitting(false);
         setUploading(false);
         return;

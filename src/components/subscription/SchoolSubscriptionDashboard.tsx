@@ -58,6 +58,10 @@ export const SchoolSubscriptionDashboard: React.FC = () => {
     if (!screenshotFile || !school) return null;
     const fileExt = screenshotFile.name.split('.').pop() || 'jpg';
     const filePath = `payment-screenshots/${school.id}/${Date.now()}.${fileExt}`;
+
+    // Auto-create bucket if missing (calls SECURITY DEFINER function)
+    await supabase.rpc('ensure_payment_screenshots_bucket');
+
     const { error } = await supabase.storage.from('payment-screenshots').upload(filePath, screenshotFile, { upsert: false });
     if (error) return null;
     const { data: urlData } = supabase.storage.from('payment-screenshots').getPublicUrl(filePath);

@@ -6,7 +6,8 @@ import { SuperAdminProvider, useSuperAdmin } from './context/SuperAdminContext';
 import { SubscriptionProvider, useSubscription } from './context/SubscriptionContext';
 import { FaqProvider } from './context/FaqContext';
 import { PwaInstallBanner } from './components/common/PwaInstallBanner';
-import { SubscriptionExpiredView } from './components/subscription/SubscriptionExpiredView';
+import { SubscriptionLockGuard } from './components/subscription/SubscriptionLockGuard';
+import { SubscriptionNotice } from './components/subscription/SubscriptionNotice';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { LandingPage } from './components/landing/LandingPage';
@@ -20,7 +21,6 @@ import { RegisterSchoolView } from './components/auth/RegisterSchoolView';
 import { AcceptInvitationView } from './components/auth/AcceptInvitationView';
 import { CompleteSchoolSetupView } from './components/auth/CompleteSchoolSetupView';
 import { ForcePasswordReset } from './components/auth/ForcePasswordReset';
-import { AlertTriangle } from 'lucide-react';
 
 // Admin Views
 import { AdminDashboard } from './components/admin/AdminDashboard';
@@ -339,25 +339,20 @@ function AppContent() {
     return <CompleteSchoolSetupView />;
   }
 
-  // Subscription guard: Show expired view for suspended schools (admin only can access payment)
-  // Teachers and parents see a simple message
-  const subscriptionGuard = (role: string) => {
-    if (role === 'admin') {
-      return <SubscriptionExpiredView />;
-    }
-    // Teachers and parents see a simpler message
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-        <div className="text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 max-w-md shadow-xl">
-          <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Subscription Expired</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Your school&apos;s SamleyEduSuite subscription has expired. Please contact your school administrator to renew the subscription.
-          </p>
-        </div>
-      </div>
-    );
-  };
+  // Compute subscription lock state (no longer blocks, just shows overlay)
+  const userRole = profile?.role as string;
+  const isPaidPastExpiry = (
+    subscription?.status === 'ACTIVE' &&
+    subscription?.subscription_expires_at &&
+    new Date(subscription.subscription_expires_at).getTime() < Date.now()
+  );
+  const isTrialPastExpiry = (
+    subscription?.status === 'TRIAL' &&
+    subscription?.trial_expires_at &&
+    new Date(subscription.trial_expires_at).getTime() < Date.now()
+  );
+  const isPastExpiry = isPaidPastExpiry || isTrialPastExpiry;
+  const isSubscriptionLocked = !subLoading && (isExpired || isPastExpiry) && userRole !== 'super_admin';
 
   // Render Role-Based Screen
   const renderViewContent = () => {
@@ -430,17 +425,6 @@ function AppContent() {
 
     return <AdminDashboard onNavigate={setCurrentView} />;
   };
-  const userRole = profile?.role as string;
-
-  // Block access for non-super-admin when subscription is expired or suspended
-  // Also block if subscription is ACTIVE but past expiry date (edge case)
-  const isPastExpiry = subscription?.subscription_expires_at
-    ? new Date(subscription.subscription_expires_at).getTime() < Date.now()
-    : false;
-  const shouldBlock = (!subLoading && (isExpired || isPastExpiry) && userRole !== 'super_admin');
-  if (shouldBlock) {
-    return subscriptionGuard(userRole || 'admin');
-  }
 
   // Show loading while subscription is being fetched
   if (subLoading && userRole !== 'super_admin') {
@@ -489,6 +473,10 @@ function AppContent() {
           }}
         />
       )}
+
+      {/* Subscription Lock Guard Overlay - different for admin vs teachers/parents */}
+      {isSubscriptionLocked && userRole === 'admin' && <SubscriptionLockGuard />}
+      {isSubscriptionLocked && (userRole === 'teacher' || userRole === 'parent') && <SubscriptionNotice role={userRole} />}
     </div>
   );
 }

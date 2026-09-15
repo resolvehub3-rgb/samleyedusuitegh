@@ -30,6 +30,7 @@ export const SuperAdminSubscriptions: React.FC = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -59,18 +60,23 @@ export const SuperAdminSubscriptions: React.FC = () => {
 
   const handleApprove = async (paymentId: string) => {
     setProcessing(true);
+    setActionError(null);
     const result = await approvePayment(paymentId);
     setProcessing(false);
     if (result.success) {
       setActionSuccess('Payment approved successfully');
       setSelectedPayment(null);
       setTimeout(() => setActionSuccess(null), 3000);
+    } else {
+      setActionError(result.error || 'Approval failed');
+      setTimeout(() => setActionError(null), 5000);
     }
   };
 
   const handleReject = async () => {
     if (!selectedPayment || !rejectReason.trim()) return;
     setProcessing(true);
+    setActionError(null);
     const result = await rejectPayment(selectedPayment.id, rejectReason.trim());
     setProcessing(false);
     if (result.success) {
@@ -79,6 +85,9 @@ export const SuperAdminSubscriptions: React.FC = () => {
       setSelectedPayment(null);
       setRejectReason('');
       setTimeout(() => setActionSuccess(null), 3000);
+    } else {
+      setActionError(result.error || 'Rejection failed');
+      setTimeout(() => setActionError(null), 5000);
     }
   };
 
@@ -142,6 +151,11 @@ export const SuperAdminSubscriptions: React.FC = () => {
         {actionSuccess && (
           <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
             <CheckCircle2 className="w-4 h-4" /> {actionSuccess}
+          </span>
+        )}
+        {actionError && (
+          <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+            <XCircle className="w-4 h-4" /> {actionError}
           </span>
         )}
       </div>

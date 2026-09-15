@@ -196,6 +196,10 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate }) 
     if (!proofFile || !school) return null;
     const fileExt = proofFile.name.split('.').pop() || 'jpg';
     const filePath = `payment-screenshots/${school.id}/${profile?.id || 'parent'}-${Date.now()}.${fileExt}`;
+
+    // Auto-create bucket if missing (calls SECURITY DEFINER function)
+    await supabase.rpc('ensure_payment_screenshots_bucket');
+
     const { error } = await supabase.storage
       .from('payment-screenshots')
       .upload(filePath, proofFile, { upsert: false });
@@ -224,7 +228,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({ onNavigate }) 
       // Upload proof-of-payment screenshot to storage
       const proofUrl = await uploadProofScreenshot();
       if (!proofUrl) {
-        setProofError('Failed to upload the screenshot. Please try again.');
+        setProofError('Failed to upload screenshot. The storage bucket may not be configured. Please contact your administrator.');
         setPayingFee(false);
         setUploadingProof(false);
         return;

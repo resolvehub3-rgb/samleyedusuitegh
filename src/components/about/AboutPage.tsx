@@ -586,7 +586,7 @@ export function AboutPage({ onBack }: AboutPageProps) {
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="" aria-hidden="true" className="h-6 w-6 rounded-md object-contain" />
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-              Built with ❤️ in Ghana
+              Built By SamTeck Digital Team
             </span>
           </div>
         </div>

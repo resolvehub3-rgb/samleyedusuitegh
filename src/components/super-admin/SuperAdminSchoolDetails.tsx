@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   ArrowLeft,
   School,
@@ -20,6 +20,8 @@ import {
   XCircle,
   Clock,
   Edit3,
+  Trash2,
+  MoreVertical,
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { useSuperAdmin } from '../../context/SuperAdminContext';
@@ -36,6 +38,7 @@ interface SuperAdminSchoolDetailsProps {
 export const SuperAdminSchoolDetails: React.FC<SuperAdminSchoolDetailsProps> = ({ schoolId, onNavigate }) => {
   const { updateSchoolStatus } = useSuperAdmin();
   const [school, setSchool] = useState<any>(null);
+  const [subscription, setSubscription] = useState<any>(null);
   const [stats, setStats] = useState({
     students: 0, teachers: 0, parents: 0, admins: 0, classes: 0,
     payments: 0, attendance: 0, announcements: 0, totalPaymentAmount: 0,
@@ -45,7 +48,26 @@ export const SuperAdminSchoolDetails: React.FC<SuperAdminSchoolDetailsProps> = (
   const [loading, setLoading] = useState(true);
   const [confirmAction, setConfirmAction] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showManageMenu, setShowManageMenu] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const manageMenuRef = useRef<HTMLDivElement>(null);
   const supabase = getSupabase();
+
+  // Compute display status based on school status and subscription
+  const computeDisplayStatus = (schoolStatus: string | null, sub: any): string => {
+    if (schoolStatus === 'suspended') return 'suspended';
+    if (schoolStatus === 'deactivated') return 'deactivated';
+    if (schoolStatus === 'pending') return 'pending';
+    if (!sub) return schoolStatus || 'active';
+    const subStatus = sub.status;
+    if (subStatus === 'SUSPENDED' || subStatus === 'EXPIRED' || subStatus === 'REJECTED') return 'deactivated';
+    if (subStatus === 'TRIAL' && sub.trial_expires_at && new Date(sub.trial_expires_at).getTime() < Date.now()) return 'deactivated';
+    if (subStatus === 'ACTIVE' && sub.subscription_expires_at && new Date(sub.subscription_expires_at).getTime() < Date.now()) return 'deactivated';
+    return schoolStatus || 'active';
+  };
+
+  const displayStatus = computeDisplayStatus(school?.status, subscription);
 
   useEffect(() => {
     async function fetchDetails() {
@@ -53,7 +75,7 @@ export const SuperAdminSchoolDetails: React.FC<SuperAdminSchoolDetailsProps> = (
         setLoading(true);
         const [
           schoolRes, studentsRes, teachersRes, parentsRes, adminsRes,
-          classesRes, paymentsRes, attendanceRes, announcementsRes, ownerRes, activityRes,
+          classesRes, paymentsRes, attendanceRes, announcementsRes, ownerRes, activityRes, subRes,
         ] = await Promise.all([
           supabase.from('schools').select('*').eq('id', schoolId).maybeSingle(),
           supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', schoolId),
@@ -66,9 +88,11 @@ export const SuperAdminSchoolDetails: React.FC<SuperAdminSchoolDetailsProps> = (
           supabase.from('announcements').select('id', { count: 'exact', head: true }).eq('school_id', schoolId),
           supabase.from('profiles').select('*').eq('school_id', schoolId).eq('role', 'admin').maybeSingle(),
           supabase.from('audit_logs').select('*').eq('school_id', schoolId).order('created_at', { ascending: false }).limit(10),
+          supabase.from('school_subscriptions').select('*').eq('school_id', schoolId).maybeSingle(),
         ]);
 
         setSchool(schoolRes.data);
+        setSubscription(subRes.data);
         setOwner(ownerRes.data);
         setRecentActivity(activityRes.data || []);
 
@@ -93,15 +117,46 @@ export const SuperAdminSchoolDetails: React.FC<SuperAdminSchoolDetailsProps> = (
     fetchDetails();
   }, [schoolId, supabase]);
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (manageMenuRef.current && !manageMenuRef.current.contains(e.target as Node)) {
+        setShowManageMenu(false);
+      }
+    }
+    if (showManageMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showManageMenu]);
+
   const handleStatusChange = async () => {
     if (!confirmAction || !school) return;
     setActionLoading(true);
     await updateSchoolStatus(school.id, confirmAction);
     setActionLoading(false);
     setConfirmAction(null);
-    // Refresh school data
+    setShowManageMenu(false);
     const { data } = await supabase.from('schools').select('*').eq('id', schoolId).maybeSingle();
     if (data) setSchool(data);
+  };
+
+  const handleDeleteSchool = async () => {
+    if (!school) return;
+    setDeleteLoading(true);
+    try {
+      const { error } = await supabase.from('schools').delete().eq('id', school.id);
+      if (!error) {
+        onNavigate('schools');
+      } else {
+        console.error('Error deleting school:', error);
+        setDeleteLoading(false);
+        setDeleteConfirm(false);
+      }
+    } catch (err) {
+      console.error('Error deleting school:', err);
+      setDeleteLoading(false);
+      setDeleteConfirm(false);
+    }
   };
 
   const statusBadge = (status: string) => {
@@ -164,28 +219,37 @@ export const SuperAdminSchoolDetails: React.FC<SuperAdminSchoolDetailsProps> = (
                 {school.motto && <p className="text-xs text-slate-500 italic mt-0.5">"{school.motto}"</p>}
               </div>
               <div className="flex items-center gap-2">
-                {statusBadge(school.status)}
-                <div className="relative group">
-                  <button className="px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-1">
-                    <Edit3 className="w-3.5 h-3.5" /> Manage
+                {statusBadge(displayStatus)}
+                <div className="relative" ref={manageMenuRef}>
+                  <button
+                    onClick={() => setShowManageMenu(!showManageMenu)}
+                    className="px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-1"
+                  >
+                    <MoreVertical className="w-3.5 h-3.5" /> Manage
                   </button>
-                  <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1 z-10 hidden group-hover:block">
-                    {school.status !== 'active' && (
-                      <button onClick={() => setConfirmAction('active')} className="w-full text-left px-3 py-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 cursor-pointer">
-                        Activate School
+                  {showManageMenu && (
+                    <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1 z-20">
+                      {displayStatus !== 'active' && (
+                        <button onClick={() => { setConfirmAction('active'); setShowManageMenu(false); }} className="w-full text-left px-3 py-2 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 cursor-pointer">
+                          Activate School
+                        </button>
+                      )}
+                      {displayStatus === 'active' && (
+                        <button onClick={() => { setConfirmAction('suspended'); setShowManageMenu(false); }} className="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer">
+                          Suspend School
+                        </button>
+                      )}
+                      {displayStatus !== 'deactivated' && (
+                        <button onClick={() => { setConfirmAction('deactivated'); setShowManageMenu(false); }} className="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">
+                          Deactivate School
+                        </button>
+                      )}
+                      <hr className="my-1 border-slate-100 dark:border-slate-800" />
+                      <button onClick={() => { setDeleteConfirm(true); setShowManageMenu(false); }} className="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer flex items-center gap-2">
+                        <Trash2 className="w-3.5 h-3.5" /> Delete School
                       </button>
-                    )}
-                    {school.status === 'active' && (
-                      <button onClick={() => setConfirmAction('suspended')} className="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer">
-                        Suspend School
-                      </button>
-                    )}
-                    {school.status !== 'deactivated' && (
-                      <button onClick={() => setConfirmAction('deactivated')} className="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">
-                        Deactivate School
-                      </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -214,6 +278,43 @@ export const SuperAdminSchoolDetails: React.FC<SuperAdminSchoolDetailsProps> = (
         <StatCard title="Announcements" value={stats.announcements} icon={Megaphone} colorClass="text-rose-600 bg-rose-50 dark:bg-rose-950/40" />
         <StatCard title="School Admins" value={stats.admins} icon={UserCheck} colorClass="text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40" />
       </div>
+
+      {/* Subscription Info */}
+      {subscription && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Subscription Status</h3>
+          <div className="flex flex-wrap gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500">Status:</span>
+              <Badge variant={
+                subscription.status === 'ACTIVE' ? 'success' :
+                subscription.status === 'TRIAL' ? 'primary' :
+                subscription.status === 'SUSPENDED' || subscription.status === 'EXPIRED' ? 'danger' :
+                subscription.status === 'PENDING_VERIFICATION' ? 'warning' : 'neutral'
+              } size="sm">
+                {subscription.status}
+              </Badge>
+            </div>
+            {subscription.status === 'TRIAL' && subscription.trial_expires_at && (
+              <div className="flex items-center gap-1 text-slate-500">
+                <Clock className="w-3.5 h-3.5" />
+                Trial {new Date(subscription.trial_expires_at).getTime() < Date.now() ? 'expired' : 'expires'} {new Date(subscription.trial_expires_at).toLocaleDateString()}
+              </div>
+            )}
+            {subscription.status === 'ACTIVE' && subscription.subscription_expires_at && (
+              <div className="flex items-center gap-1 text-slate-500">
+                <Clock className="w-3.5 h-3.5" />
+                Renews {new Date(subscription.subscription_expires_at).toLocaleDateString()}
+              </div>
+            )}
+            {subscription.amount && (
+              <div className="text-slate-500">
+                Plan: GHS {subscription.amount}/{subscription.currency === 'GHS' ? 'mo' : subscription.currency}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Two Column: Owner Info + Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -276,6 +377,18 @@ export const SuperAdminSchoolDetails: React.FC<SuperAdminSchoolDetailsProps> = (
         confirmLabel={confirmAction === 'active' ? 'Activate' : confirmAction === 'suspended' ? 'Suspend' : 'Deactivate'}
         variant={confirmAction === 'active' ? 'primary' : 'danger'}
         loading={actionLoading}
+      />
+
+      {/* Delete School Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm}
+        onClose={() => setDeleteConfirm(false)}
+        onConfirm={handleDeleteSchool}
+        title="Delete School"
+        message={`Are you sure you want to permanently delete "${school?.name}"? This action cannot be undone and will remove all associated data.`}
+        confirmLabel="Delete School"
+        variant="danger"
+        loading={deleteLoading}
       />
     </div>
   );
